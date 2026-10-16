@@ -1,4 +1,4 @@
-# cgordon0.github.io
+# Tutorial Blog
 
 username.github.io/
 
