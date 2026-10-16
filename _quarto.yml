@@ -1,0 +1,35 @@
+project:
+
+  type: website
+
+  output-dir: docs
+
+ 
+
+website:
+
+  title: "Your Name"
+
+  navbar:
+
+    left:
+
+      - href: index.qmd
+
+        text: Home
+
+      - projects.qmd
+
+      - about.qmd
+
+ 
+
+format:
+
+  html:
+
+    theme: cosmo
+
+    toc: true
+
+    code-fold: true
