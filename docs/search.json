@@ -1,0 +1,86 @@
+[
+  {
+    "objectID": "about.html",
+    "href": "about.html",
+    "title": "About",
+    "section": "",
+    "text": "I’m Connor Gordon, a student at Brigham Young University studying Statistics with a Data Science Emphasis.\nMy interests include Python, financial markets, machine learning, and data visualization. I’m using this site to practice explaining what I learn!\nThe SPY tutorial follows a question from raw data through cleaning, modeling, and evaluation."
+  },
+  {
+    "objectID": "index.html",
+    "href": "index.html",
+    "title": "SPY Data Science Tutorial",
+    "section": "",
+    "text": "My name is Connor Gordon. This is where I’m developing tutorials and projects for STAT 386 at BYU, with an interest in Python and financial data!\n\nBuilding Your First Python Model with SPY Data\nStart with a CSV, clean the data, and work toward a model you can evaluate. This tutorial connects pandas skills with a first machine-learning model you can create.\nRead the tutorial →"
+  },
+  {
+    "objectID": "blog.html",
+    "href": "blog.html",
+    "title": "Building Your First Python Model with SPY Data",
+    "section": "",
+    "text": "Before choosing a machine-learning algorithm, decide what you want to predict! The question in consideration for this tutorial is:\nCan recent SPY returns help predict its return on the next trading day?\nSPY is an ETF that tracks the S&P 500. I will use its prices to practice importing data, checking quality, creating inputs, fitting one model, and comparing errors with a baseline model. This connects the work we are doing in STAT 386 with CSV files, pandas, tidy data, and missing values to a model. This tutorial assumes that you have a baseline knowledge of regressions."
+  },
+  {
+    "objectID": "blog.html#start-with-a-question",
+    "href": "blog.html#start-with-a-question",
+    "title": "Building Your First Python Model with SPY Data",
+    "section": "",
+    "text": "Before choosing a machine-learning algorithm, decide what you want to predict! The question in consideration for this tutorial is:\nCan recent SPY returns help predict its return on the next trading day?\nSPY is an ETF that tracks the S&P 500. I will use its prices to practice importing data, checking quality, creating inputs, fitting one model, and comparing errors with a baseline model. This connects the work we are doing in STAT 386 with CSV files, pandas, tidy data, and missing values to a model. This tutorial assumes that you have a baseline knowledge of regressions."
+  },
+  {
+    "objectID": "blog.html#step-1-load-your-dataset",
+    "href": "blog.html#step-1-load-your-dataset",
+    "title": "Building Your First Python Model with SPY Data",
+    "section": "Step 1: Load your dataset",
+    "text": "Step 1: Load your dataset\nI am starting with a SPY dataset I previously transformed for a personal project. My stock-mlm repository (link listed below) contains related code for acquiring daily Alpaca bars and adding pandas_ta indicators. The supplied CSV has 614 observations and 35 columns, covering January 2024 through June 2026and we will be using the timestamp and closing price as variables.\nFrom the project terminal, install the environment:\nuv sync\nIn Positron, select the project’s .venv interpreter and run the Python chunks. The saved CSV lets the example run without an API key or a fresh download.\n\nimport pandas as pd\n\nraw = pd.read_csv(\"data/SPY.csv\")\nprint(f\"Imported {len(raw):,} rows and {len(raw.columns)} columns.\\n\")\nprint(raw[[\"symbol\", \"timestamp\", \"close\"]].head(3).to_markdown(\n    index=False, floatfmt=\".2f\"\n))\nImported 614 rows and 35 columns.\n\n\n\nsymbol\ntimestamp\nclose\n\n\n\n\nSPY\n2024-01-18 05:00:00+00:00\n476.49\n\n\nSPY\n2024-01-19 05:00:00+00:00\n482.43\n\n\nSPY\n2024-01-22 05:00:00+00:00\n483.45\n\n\n\n\nThe file does not document dividend adjustments. Instead, I modeled the changes in the supplied close series, without claiming total investment returns. There’s metadata that records the snapshot’s date range and checksum."
+  },
+  {
+    "objectID": "blog.html#clean-before-calculating",
+    "href": "blog.html#clean-before-calculating",
+    "title": "Building Your First Python Model with SPY Data",
+    "section": "2. Clean before calculating",
+    "text": "2. Clean before calculating\nLoading a file successfully does not prove it is ready for analysis. A date stored as text can sort incorrectly, and a non-numeric price cannot produce a meaningful return! I select SPY, parse timestamps, and check prices first.\n\nprices = raw.loc[raw[\"symbol\"].eq(\"SPY\"), [\"timestamp\", \"close\"]].copy()\ntimestamps = pd.to_datetime(prices[\"timestamp\"], errors=\"coerce\", utc=True)\nprices[\"date\"] = (\n    timestamps.dt.tz_convert(\"America/New_York\")\n    .dt.tz_localize(None).dt.normalize()\n)\nprices[\"close\"] = pd.to_numeric(prices[\"close\"], errors=\"coerce\")\nprices[\"close\"] = prices[\"close\"].replace(\n    [float(\"inf\"), -float(\"inf\")], float(\"nan\")\n)\nprices = prices[[\"date\", \"close\"]]\n\nConverting UTC timestamps to New York time gives consistent local trading dates across daylight-saving changes. With errors=\"coerce\", invalid values become missing. My default is to inspect missing data, not automatically delete it. Here, the code stops if a price is unusable: deleting it could turn a daily return into a change across multiple trading days, or cause other errors you don’t want in your code.\n\ninvalid = prices[\"date\"].isna() | prices[\"close\"].isna() | (prices[\"close\"] &lt;= 0)\nprint(f\"Unusable records: {int(invalid.sum())}\")\nif invalid.any():\n    raise ValueError(\"Investigate unusable records before calculating returns.\")\n\nduplicate_count = int(prices.duplicated().sum())\nprices = prices.drop_duplicates().sort_values(\"date\").reset_index(drop=True)\nif prices[\"date\"].duplicated().any():\n    raise ValueError(\"Conflicting prices for one date: inspect the source.\")\n\nprint(f\"Exact duplicates removed: {duplicate_count}\")\nprint(f\"Clean trading dates: {len(prices):,}\")\n\nUnusable records: 0\nExact duplicates removed: 0\nClean trading dates: 614\n\n\nThe result is a tidy table: one observation per trading date, one variable per column. This already-transformed file passes the checks; reporting zero problems is still useful. Weekends and market holidays are expected gaps, so we should leave these values alone. Unexpected missing trading dates would need investigation if they were present."
+  },
+  {
+    "objectID": "blog.html#create-features-and-a-target",
+    "href": "blog.html#create-features-and-a-target",
+    "title": "Building Your First Python Model with SPY Data",
+    "section": "3. Create features and a target",
+    "text": "3. Create features and a target\nA feature is an input available when making a prediction; the target is the outcome we want to predict. Our daily percentage price change is:\n\\[\nr_t = 100\\left(\\frac{P_t}{P_{t-1}} - 1\\right).\n\\]\nFor example, a move from 100 to 101 is a 1% change. pandas’ pct_change() returns a fraction, so we will multiply by 100. We should add the recent average and standard deviation, then use shift(-1) to align tomorrow’s outcome with today’s inputs.\n\nprices[\"return_1d\"] = prices[\"close\"].pct_change(fill_method=None) * 100\nprices[\"mean_5d\"] = prices[\"return_1d\"].rolling(5).mean()\nprices[\"volatility_5d\"] = prices[\"return_1d\"].rolling(5).std()\nprices[\"next_return\"] = prices[\"return_1d\"].shift(-1)\nprices[\"target_date\"] = prices[\"date\"].shift(-1)\n\nfeatures = [\"return_1d\", \"mean_5d\", \"volatility_5d\"]\ndata = prices.dropna(subset=features + [\"next_return\", \"target_date\"])\nprint(f\"Model-ready observations: {len(data):,}\")\n\nModel-ready observations: 608\n\n\n\n\n\nPredictor\nInformation available after today’s close\n\n\n\n\nreturn_1d\nToday’s percentage price change\n\n\nmean_5d\nMean of the five most recent daily changes\n\n\nvolatility_5d\nStandard deviation of those changes\n\n\n\nOnly the target uses future information, whereas all three predictors use current or earlier prices. The first five rows lack enough history, and the last row lacks tomorrow’s outcome. We should probably remove these rows to clean the data, so getting rid of six expected boundary rows leaves us 608 observations."
+  },
+  {
+    "objectID": "blog.html#keep-the-future-out-of-training",
+    "href": "blog.html#keep-the-future-out-of-training",
+    "title": "Building Your First Python Model with SPY Data",
+    "section": "4. Keep the future out of training",
+    "text": "4. Keep the future out of training\nI train on targets dated before 2026 and test on targets from 2026. A random split would mix earlier and later observations, weakening the forecasting test, so splitting the data this way is more ideal. If you’re interested, there is something called the data-leakage problem, which is using information unavailable when predicting. Read the article if you want to learn more about it!\n\ntrain = data.loc[data[\"target_date\"] &lt; \"2026-01-01\"]\ntest = data.loc[data[\"target_date\"] &gt;= \"2026-01-01\"]\nX_train, y_train = train[features], train[\"next_return\"]\nX_test, y_test = test[features], test[\"next_return\"]\nprint(f\"Training observations: {len(train)}; test observations: {len(test)}\")\n\nTraining observations: 485; test observations: 123\n\n\nSplitting the data this way gives us 485 training and 123 test observations. Each forecast happens after that day’s close, so earlier test-period prices become available as time passes. This model produces successive one-day predictions, but you can try to adjust it to fit a six-month forecast."
+  },
+  {
+    "objectID": "blog.html#fit-one-model",
+    "href": "blog.html#fit-one-model",
+    "title": "Building Your First Python Model with SPY Data",
+    "section": "5. Fit one model",
+    "text": "5. Fit one model\nFor our case, I decided to use scikit-learn’s LinearRegression model. It estimates an intercept and weights for the three predictors by minimizing squared training errors. fit() learns from training observations; predict() applies those fixed weights to test inputs. When fitting data, you should never fit on the test’s outcomes.\n\nfrom sklearn.linear_model import LinearRegression\n\nmodel = LinearRegression()\nmodel.fit(X_train, y_train)\npredicted = model.predict(X_test)"
+  },
+  {
+    "objectID": "blog.html#compare-with-a-baseline",
+    "href": "blog.html#compare-with-a-baseline",
+    "title": "Building Your First Python Model with SPY Data",
+    "section": "6. Compare with a baseline",
+    "text": "6. Compare with a baseline\nMy baseline predicts zero change every day, which gives us a simple reference for comparison. This is a fixed prediction, rather than a Bayesian prior distribution. For this linear regression, the three chosen predictors determine the model’s form; fitting estimates their weights rather than automatically making the model more complex. I compare both using mean absolute error (MAE), the average absolute prediction error, where lower values are better. Since the target is a percentage change, MAE is measured in percentage points!\n\nBelow is the code that demonstrates this:\n\nfrom sklearn.metrics import mean_absolute_error\n\nbaseline = [0.0] * len(y_test)\nbaseline_mae = mean_absolute_error(y_test, baseline)\nmodel_mae = mean_absolute_error(y_test, predicted)\nresults = pd.DataFrame({\n    \"Prediction\": [\"Zero change\", \"Linear regression\"],\n    \"Test MAE (percentage points)\": [baseline_mae, model_mae],\n})\nprint(results.to_markdown(index=False, floatfmt=\".3f\"))\n\n\n\nPrediction\nTest MAE (percentage points)\n\n\n\n\nZero change\n0.682\n\n\nLinear regression\n0.686\n\n\n\n\nThe baseline scores 0.682, compared with 0.686 for regression. On this test period, the model slightly underperforms the baseline. Fitting successfully does not guarantee useful predictions, so dont be discouraged and keep trying to improve your model!\n\n\nPlot the test predictions\nimport matplotlib.pyplot as plt\nimport matplotlib.dates as mdates\n\nfig, ax = plt.subplots(figsize=(9, 3.8), layout=\"constrained\")\nax.plot(test[\"target_date\"], y_test, color=\"#687681\", linewidth=1,\n        label=\"Observed change\")\nax.plot(test[\"target_date\"], predicted, color=\"#096b63\", linewidth=1.7,\n        label=\"Linear regression\")\nax.axhline(0, color=\"#ab6531\", linestyle=\"--\", linewidth=1,\n           label=\"Zero-change baseline\")\nax.set(title=\"Does the model capture tomorrow's price change?\",\n       xlabel=\"Target trading date\", ylabel=\"Daily price change (%)\")\nax.xaxis.set_major_locator(mdates.MonthLocator())\nax.xaxis.set_major_formatter(mdates.DateFormatter(\"%b %Y\"))\nax.spines[[\"top\", \"right\"]].set_visible(False)\nax.legend(frameon=False, loc=\"upper left\", ncol=3, fontsize=8)\nplt.show()\n\n\n\n\n\n\n\n\nFigure 1: One-day predictions on the 2026 test period. The fitted model misses many of the larger price changes.\n\n\n\n\n\nThe plot helps explain the errors: predictions stay near zero while observed changes are a lot crazier. In this example, the fitted coefficients produce much less variation than the observed returns; a linear regression is not guaranteed to behave this way. Other time-series forecasting methods are worth exploring in tutorials on your own.\nThis was to demonstrate how to begin building a model. In this case, one test period cannot establish future performance or profitability. I would use earlier time-based validation windows to choose improvements, keeping a later test period untouched in order to improve my model."
+  },
+  {
+    "objectID": "blog.html#try-it-yourself",
+    "href": "blog.html#try-it-yourself",
+    "title": "Building Your First Python Model with SPY Data",
+    "section": "Try it yourself",
+    "text": "Try it yourself\nI started with a CSV and checked its types, dates, duplicates, and missingness before building features. Keeping time in order and comparing against a baseline highlighted that the stock market is an extremely complex thing to predict.\nYour next step: Find other statistical models to try and predict the market! You can first inspect data.head() and trace one row’s inputs to its next-day target. Then, using only training data, compare five-day and ten-day rolling features with chronological validation. Decide on the feature choice before evaluating it on a fresh holdout period.\nI hope you found this tutorial helpful! Go ahead and continue learning how to improve your model with other methods, and look for other ways to predict future data!"
+  },
+  {
+    "objectID": "blog.html#resources",
+    "href": "blog.html#resources",
+    "title": "Building Your First Python Model with SPY Data",
+    "section": "Resources",
+    "text": "Resources\n\npandas missing-data guide\nscikit-learn time-series evaluation example\nMy earlier stock-data project"
+  }
+]
