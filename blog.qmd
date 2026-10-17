@@ -1,10 +1,10 @@
 ---
 title: "Building Your First Python Model with SPY Data"
-subtitle: "Clean a SPY dataset, build a model, and give it a fair test."
+subtitle: "Clean a SPY dataset and build your first python model"
 author: "Connor Gordon"
 date: 2026-10-16
 categories: [Python, pandas, Machine learning]
-description: "A first modeling workflow using SPY data, with careful cleaning and an honest baseline."
+description: "A tutorial outlining how to create your model outline and clean your data to your liking"
 jupyter: python3
 ---
 
