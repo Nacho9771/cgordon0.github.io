@@ -1,2 +1,9 @@
 /.quarto/
 **/*.quarto_ipynb
+.venv/
+.cache/
+__pycache__/
+.ipynb_checkpoints/
+.env
+.env.*
+!.env.example

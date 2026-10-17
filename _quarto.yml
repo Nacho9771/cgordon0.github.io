@@ -1,35 +1,44 @@
 project:
-
   type: website
-
   output-dir: docs
-
- 
+  render:
+    - index.qmd
+    - blog.qmd
+    - about.qmd
+  resources:
+    - data/SPY.csv
+    - data/SPY.metadata.json
+    - data/README.md
+    - pyproject.toml
+    - uv.lock
+    - "!**/.venv/**"
+    - "!**/.cache/**"
 
 website:
-
-  title: "Your Name"
-
+  title: "Connor Gordon"
   navbar:
-
     left:
-
       - href: index.qmd
-
         text: Home
-
-      - projects.qmd
-
-      - about.qmd
-
- 
+      - href: blog.qmd
+        text: Blog
+      - href: about.qmd
+        text: About
+  page-footer:
+    left: "Connor Gordon · Data science notes"
+    right: "Built with Quarto"
 
 format:
-
   html:
-
     theme: cosmo
-
+    css: styles.css
     toc: true
+    toc-title: "On this page"
+    code-fold: false
+    code-copy: true
+    highlight-style: github
 
-    code-fold: true
+execute:
+  error: false
+  warning: true
+  cache: false

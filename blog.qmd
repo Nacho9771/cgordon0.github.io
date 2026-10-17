@@ -1,1 +1,114 @@
+---
+title: "Building and Evaluating Your First Python Model with SPY Data"
+subtitle: "From a raw CSV to a fair test of a simple prediction."
+author: "Connor Gordon"
+date: 2026-10-16
+categories: [Python, pandas, Machine learning]
+description: "A first modeling workflow using SPY data, with careful cleaning and an honest baseline."
+jupyter: python3
+---
 
+::: {.callout-note title="Draft in progress"}
+This first checkpoint covers importing and cleaning the data. Feature engineering, model training, and evaluation come next.
+:::
+
+## Start with a question
+
+Before choosing a machine-learning algorithm, decide what you want to predict. The question we are considering for this tutorial is the following:
+
+\
+**Can recent SPY returns help predict its return on the next trading day?**
+
+SPY is an ETF that tracks the S&P 500. Its daily prices give us a concrete dataset for practicing Python. Our goal is to learn how to import data, check its quality, create useful inputs, fit one model, and compare its errors with a simple baseline.
+
+This builds on our STAT 386 work with CSV files, pandas, data types, tidy data, and missing values. You should know basic Python and how to select columns in a DataFrame. The modeling steps will be introduced as we go.
+
+## 1. Load a reproducible dataset
+
+I am starting with a SPY dataset I previously transformed for a personal project, but you can start by scraping stock data from somewhere like Yahoo Finance or a free API (my [stock-mlm repository](https://github.com/Nacho9771/stock-mlm) contains related code for acquiring daily bars from Alpaca and adding indicators with `pandas_ta`). The supplied CSV has 614 observations, 35 columns, and dates from January 2024 through June 2026, and we will use the timestamp and closing price as variables.
+
+Keeping the CSV with the project lets readers run the example without an API key or a network request. Its metadata records the date range and checksum. This is already transformed data, so our checks describe this file rather than the original retrieval of the data.
+
+From the project’s terminal, install the Python environment and preview the site:
+
+``` bash
+uv sync
+uv run quarto preview
+```
+
+In Positron, select the project’s `.venv` Python interpreter. Run the Python chunks in this post in order, or render the page with Quarto.
+
+```{python}
+#| label: load-data
+import pandas as pd
+
+raw = pd.read_csv("data/SPY.csv")
+print(f"Imported {len(raw):,} rows and {len(raw.columns)} columns.")
+raw[["symbol", "timestamp", "close"]].head(3)
+```
+
+Each row represents one trading date. Our later target will be a change in the supplied **close** series. The file does not document dividend adjustments, so we will describe price changes rather than claim to calculate total investment returns.
+
+## 2. Clean before calculating
+
+Loading a file successfully does not prove it is ready for analysis. A date stored as text can sort incorrectly, and a nonnumeric price cannot be used to calculate a return! This means we need to clean the data. We first select the columns we need and give them clear names:
+
+```{python}
+#| label: clean-data
+prices = raw.loc[raw["symbol"].eq("SPY"), ["timestamp", "close"]].copy()
+
+timestamps = pd.to_datetime(prices["timestamp"], errors="coerce", utc=True)
+prices["date"] = (
+    timestamps.dt.tz_convert("America/New_York")
+    .dt.tz_localize(None).dt.normalize()
+)
+prices["close"] = pd.to_numeric(prices["close"], errors="coerce")
+prices["close"] = prices["close"].replace(
+    [float("inf"), -float("inf")], float("nan")
+)
+prices = prices[["date", "close"]]
+```
+
+The timestamps include UTC offsets. Parsing them as UTC and converting to New York time gives us consistent local trading dates across daylight-saving changes, which is something that you should look out for when cleaning data. With `errors="coerce"`, an invalid value becomes missing so we can identify it. The default for missing data is to inspect it, not ignore it or outright remove it. In this case, we count unusable records before removing them and remove only exact duplicate date–price pairs.
+
+```{python}
+#| label: validate-data
+invalid = prices["date"].isna() | prices["close"].isna() | (prices["close"] <= 0)
+invalid_count = int(invalid.sum())
+valid = prices.loc[~invalid].copy()
+duplicate_count = int(valid.duplicated().sum())
+prices = valid.drop_duplicates().sort_values("date").reset_index(drop=True)
+
+if prices["date"].duplicated().any():
+    raise ValueError("Conflicting prices for one date: inspect the source.")
+
+print(f"Unusable records removed: {invalid_count}")
+print(f"Exact duplicate records removed: {duplicate_count}")
+print(f"Clean trading dates retained: {len(prices):,}")
+prices.head(3)
+```
+
+This creates a tidy table: one observation per trading date, with one variable per column. Two different prices for the same date trigger an error because choosing one silently could change the analysis.
+
+| Check | Why it matters |
+|:-----------------------------------|:-----------------------------------|
+| Parse dates and prices | Calculations need meaningful data types. |
+| Count unusable records | Cleaning decisions should be visible. |
+| Remove exact duplicates | Repeated observations should not receive extra weight. |
+| Sort dates | Returns must compare observations in the correct order. |
+
+We also need to think about why values are absent in the first place. SPY does not trade every calendar day, so weekends and market holidays show up as gaps. We will keep trading dates rather than invent prices for those days. An unexpected missing trading-day price shouldn't be deleted because it could make the next observed change span more than one trading day.
+
+The data you download may already pass your checks - my data had to be slightly adjusted and added to. Reporting zero removed rows is still useful evidence, so don't remove those values either! We do not need to damage the dataset to demonstrate cleaning, and dropping missing rows is not a universal solution to missingness.
+
+## Next: turn clean prices into a model
+
+Our next checkpoint will calculate returns, build features available at the end of each trading day, and separate earlier training dates from later test dates. We will then fit a linear regression and compare its mean absolute error with a prediction of zero change.
+
+Before moving on, inspect `raw.dtypes` and `prices.dtypes` in Positron. Which columns changed type, and why does sorting need to happen before calculating a return?
+
+## Resources
+
+- [pandas CSV import](https://pandas.pydata.org/docs/reference/api/pandas.read_csv.html)
+- [pandas missing-data guide](https://pandas.pydata.org/docs/user_guide/missing_data.html)
+- [scikit-learn guidance on avoiding data leakage](https://scikit-learn.org/stable/common_pitfalls.html#data-leakage)

@@ -6,8 +6,11 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
+<meta name="author" content="Connor Gordon">
+<meta name="dcterms.date" content="2026-10-16">
+<meta name="description" content="A first modeling workflow using SPY data, with careful cleaning and an honest baseline.">
 
-<title>blog – Your Name</title>
+<title>Building and Evaluating Your First Python Model with SPY Data – Connor Gordon</title>
 <style>
 /* Default styles provided by pandoc.
 ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
@@ -26,10 +29,45 @@ ul.task-list li input[type="checkbox"] {
   margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
   vertical-align: middle;
 }
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
 </style>
 
 
-<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js" integrity="sha384-ZvpUoO/+PpLXR1lu4jmpXWu80pZlYUAfxl5NsBMWOEPSjUn/6Z/hRTt8+pR6L4N2" crossorigin="anonymous"></script><script src="site_libs/quarto-nav/quarto-nav.js"></script>
 <script src="site_libs/quarto-nav/headroom.min.js"></script>
 <script src="site_libs/clipboard/clipboard.min.js"></script>
 <script src="site_libs/quarto-search/autocomplete.umd.js"></script>
@@ -42,10 +80,10 @@ ul.task-list li input[type="checkbox"] {
 <script src="site_libs/quarto-html/tippy.umd.min.js"></script>
 <script src="site_libs/quarto-html/anchor.min.js"></script>
 <link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="site_libs/quarto-html/quarto-syntax-highlighting-64a204ab8560d761af7679ceaba22944.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-bb62276ab45c84d9efd712f51ff97b5a.css" rel="stylesheet" id="quarto-text-highlighting-styles">
 <script src="site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="site_libs/bootstrap/bootstrap-172ba59bd5e0b52282274ba0c0cc16fc.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-09fef243f5e36adec4033a4539b6f025.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
   "location": "navbar",
   "copy-button": false,
@@ -73,8 +111,12 @@ ul.task-list li input[type="checkbox"] {
     "search-label": "Search"
   }
 }</script>
+<script src="https://cdn.jsdelivr.net/npm/requirejs@2.3.6/require.min.js" integrity="sha384-c9c+LnTbwQ3aujuU7ULEPVvgLs+Fn6fJUvIGTsuu1ZcCf11fiEubah0ttpca4ntM sha384-6V1/AdqZRWk1KAlWbKBlGhN7VG4iE/yAZcO6NZPMF8od0vukrvr0tg4qY6NSrItx" crossorigin="anonymous"></script>
+
+<script type="application/javascript">define('jquery', [],function() {return window.jQuery;})</script>
 
 
+<link rel="stylesheet" href="styles.css">
 </head>
 
 <body class="nav-fixed quarto-light">
@@ -85,7 +127,7 @@ ul.task-list li input[type="checkbox"] {
       <div class="navbar-container container-fluid">
       <div class="navbar-brand-container mx-auto">
     <a class="navbar-brand" href="./index.html">
-    <span class="navbar-title">Your Name</span>
+    <span class="navbar-title">Connor Gordon</span>
     </a>
   </div>
             <div id="quarto-search" class="" title="Search"></div>
@@ -99,13 +141,12 @@ ul.task-list li input[type="checkbox"] {
 <span class="menu-text">Home</span></a>
   </li>  
   <li class="nav-item">
-    <span class="nav-link">
-<span class="menu-text">projects.qmd</span>
-    </span>
+    <a class="nav-link active" href="./blog.html" aria-current="page"> 
+<span class="menu-text">Blog</span></a>
   </li>  
   <li class="nav-item">
     <a class="nav-link" href="./about.html"> 
-<span class="menu-text">about.html</span></a>
+<span class="menu-text">About</span></a>
   </li>  
 </ul>
           </div> <!-- /navcollapse -->
@@ -118,17 +159,262 @@ ul.task-list li input[type="checkbox"] {
 <div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
 <!-- sidebar -->
 <!-- margin-sidebar -->
-    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar zindex-bottom">
-        
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#start-with-a-question" id="toc-start-with-a-question" class="nav-link active" data-scroll-target="#start-with-a-question">Start with a question</a></li>
+  <li><a href="#load-a-reproducible-dataset" id="toc-load-a-reproducible-dataset" class="nav-link" data-scroll-target="#load-a-reproducible-dataset">1. Load a reproducible dataset</a></li>
+  <li><a href="#clean-before-calculating" id="toc-clean-before-calculating" class="nav-link" data-scroll-target="#clean-before-calculating">2. Clean before calculating</a></li>
+  <li><a href="#next-turn-clean-prices-into-a-model" id="toc-next-turn-clean-prices-into-a-model" class="nav-link" data-scroll-target="#next-turn-clean-prices-into-a-model">Next: turn clean prices into a model</a></li>
+  <li><a href="#resources" id="toc-resources" class="nav-link" data-scroll-target="#resources">Resources</a></li>
+  </ul>
+</nav>
     </div>
 <!-- main -->
-<main class="content" id="quarto-document-content"><header id="title-block-header" class="quarto-title-block"></header>
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">Building and Evaluating Your First Python Model with SPY Data</h1>
+<p class="subtitle lead">From a raw CSV to a fair test of a simple prediction.</p>
+  <div class="quarto-categories">
+    <div class="quarto-category">Python</div>
+    <div class="quarto-category">pandas</div>
+    <div class="quarto-category">Machine learning</div>
+  </div>
+  </div>
+
+<div>
+  <div class="description">
+    A first modeling workflow using SPY data, with careful cleaning and an honest baseline.
+  </div>
+</div>
 
 
+<div class="quarto-title-meta">
+
+    <div>
+    <div class="quarto-title-meta-heading">Author</div>
+    <div class="quarto-title-meta-contents">
+             <p>Connor Gordon </p>
+          </div>
+  </div>
+    
+    <div>
+    <div class="quarto-title-meta-heading">Published</div>
+    <div class="quarto-title-meta-contents">
+      <p class="date">October 16, 2026</p>
+    </div>
+  </div>
+  
+    
+  </div>
+  
 
 
+</header>
 
 
+<div class="callout callout-style-default callout-note callout-titled" title="Draft in progress">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+<span class="screen-reader-only">Note</span>Draft in progress
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>This first checkpoint covers importing and cleaning the data. Feature engineering, model training, and evaluation come next.</p>
+</div>
+</div>
+<section id="start-with-a-question" class="level2">
+<h2 class="anchored" data-anchor-id="start-with-a-question">Start with a question</h2>
+<p>Before choosing a machine-learning algorithm, decide what you want to predict. The question we are considering for this tutorial is the following:</p>
+<p><br>
+<strong>Can recent SPY returns help predict its return on the next trading day?</strong></p>
+<p>SPY is an ETF that tracks the S&amp;P 500. Its daily prices give us a concrete dataset for practicing Python. Our goal is to learn how to import data, check its quality, create useful inputs, fit one model, and compare its errors with a simple baseline.</p>
+<p>This builds on our STAT 386 work with CSV files, pandas, data types, tidy data, and missing values. You should know basic Python and how to select columns in a DataFrame. The modeling steps will be introduced as we go.</p>
+</section>
+<section id="load-a-reproducible-dataset" class="level2">
+<h2 class="anchored" data-anchor-id="load-a-reproducible-dataset">1. Load a reproducible dataset</h2>
+<p>I am starting with a SPY dataset I previously transformed for a personal project, but you can start by scraping stock data from somewhere like Yahoo Finance or a free API (my <a href="https://github.com/Nacho9771/stock-mlm">stock-mlm repository</a> contains related code for acquiring daily bars from Alpaca and adding indicators with <code>pandas_ta</code>). The supplied CSV has 614 observations, 35 columns, and dates from January 2024 through June 2026, and we will use the timestamp and closing price as variables.</p>
+<p>Keeping the CSV with the project lets readers run the example without an API key or a network request. Its metadata records the date range and checksum. This is already transformed data, so our checks describe this file rather than the original retrieval of the data.</p>
+<p>From the project’s terminal, install the Python environment and preview the site:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">uv</span> sync</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="ex">uv</span> run quarto preview</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p>In Positron, select the project’s <code>.venv</code> Python interpreter. Run the Python chunks in this post in order, or render the page with Quarto.</p>
+<div id="cell-load-data" class="cell" data-execution_count="1">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> pandas <span class="im">as</span> pd</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>raw <span class="op">=</span> pd.read_csv(<span class="st">"data/SPY.csv"</span>)</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Imported </span><span class="sc">{</span><span class="bu">len</span>(raw)<span class="sc">:,}</span><span class="ss"> rows and </span><span class="sc">{</span><span class="bu">len</span>(raw.columns)<span class="sc">}</span><span class="ss"> columns."</span>)</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>raw[[<span class="st">"symbol"</span>, <span class="st">"timestamp"</span>, <span class="st">"close"</span>]].head(<span class="dv">3</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Imported 614 rows and 35 columns.</code></pre>
+</div>
+<div id="load-data" class="cell-output cell-output-display" data-execution_count="1">
+<div>
+
+
+<table class="dataframe caption-top table table-sm table-striped small" data-border="1">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th"></th>
+<th data-quarto-table-cell-role="th">symbol</th>
+<th data-quarto-table-cell-role="th">timestamp</th>
+<th data-quarto-table-cell-role="th">close</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<th data-quarto-table-cell-role="th">0</th>
+<td>SPY</td>
+<td>2024-01-18 05:00:00+00:00</td>
+<td>476.49</td>
+</tr>
+<tr class="even">
+<th data-quarto-table-cell-role="th">1</th>
+<td>SPY</td>
+<td>2024-01-19 05:00:00+00:00</td>
+<td>482.43</td>
+</tr>
+<tr class="odd">
+<th data-quarto-table-cell-role="th">2</th>
+<td>SPY</td>
+<td>2024-01-22 05:00:00+00:00</td>
+<td>483.45</td>
+</tr>
+</tbody>
+</table>
+
+</div>
+</div>
+</div>
+<p>Each row represents one trading date. Our later target will be a change in the supplied <strong>close</strong> series. The file does not document dividend adjustments, so we will describe price changes rather than claim to calculate total investment returns.</p>
+</section>
+<section id="clean-before-calculating" class="level2">
+<h2 class="anchored" data-anchor-id="clean-before-calculating">2. Clean before calculating</h2>
+<p>Loading a file successfully does not prove it is ready for analysis. A date stored as text can sort incorrectly, and a nonnumeric price cannot be used to calculate a return! This means we need to clean the data. We first select the columns we need and give them clear names:</p>
+<div id="clean-data" class="cell" data-execution_count="2">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>prices <span class="op">=</span> raw.loc[raw[<span class="st">"symbol"</span>].eq(<span class="st">"SPY"</span>), [<span class="st">"timestamp"</span>, <span class="st">"close"</span>]].copy()</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>timestamps <span class="op">=</span> pd.to_datetime(prices[<span class="st">"timestamp"</span>], errors<span class="op">=</span><span class="st">"coerce"</span>, utc<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>prices[<span class="st">"date"</span>] <span class="op">=</span> (</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>    timestamps.dt.tz_convert(<span class="st">"America/New_York"</span>)</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>    .dt.tz_localize(<span class="va">None</span>).dt.normalize()</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>prices[<span class="st">"close"</span>] <span class="op">=</span> pd.to_numeric(prices[<span class="st">"close"</span>], errors<span class="op">=</span><span class="st">"coerce"</span>)</span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>prices[<span class="st">"close"</span>] <span class="op">=</span> prices[<span class="st">"close"</span>].replace(</span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>    [<span class="bu">float</span>(<span class="st">"inf"</span>), <span class="op">-</span><span class="bu">float</span>(<span class="st">"inf"</span>)], <span class="bu">float</span>(<span class="st">"nan"</span>)</span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>prices <span class="op">=</span> prices[[<span class="st">"date"</span>, <span class="st">"close"</span>]]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>The timestamps include UTC offsets. Parsing them as UTC and converting to New York time gives us consistent local trading dates across daylight-saving changes, which is something that you should look out for when cleaning data. With <code>errors="coerce"</code>, an invalid value becomes missing so we can identify it. The default for missing data is to inspect it, not ignore it or outright remove it. In this case, we count unusable records before removing them and remove only exact duplicate date–price pairs.</p>
+<div id="cell-validate-data" class="cell" data-execution_count="3">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>invalid <span class="op">=</span> prices[<span class="st">"date"</span>].isna() <span class="op">|</span> prices[<span class="st">"close"</span>].isna() <span class="op">|</span> (prices[<span class="st">"close"</span>] <span class="op">&lt;=</span> <span class="dv">0</span>)</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>invalid_count <span class="op">=</span> <span class="bu">int</span>(invalid.<span class="bu">sum</span>())</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>valid <span class="op">=</span> prices.loc[<span class="op">~</span>invalid].copy()</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>duplicate_count <span class="op">=</span> <span class="bu">int</span>(valid.duplicated().<span class="bu">sum</span>())</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>prices <span class="op">=</span> valid.drop_duplicates().sort_values(<span class="st">"date"</span>).reset_index(drop<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> prices[<span class="st">"date"</span>].duplicated().<span class="bu">any</span>():</span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>    <span class="cf">raise</span> <span class="pp">ValueError</span>(<span class="st">"Conflicting prices for one date: inspect the source."</span>)</span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Unusable records removed: </span><span class="sc">{</span>invalid_count<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Exact duplicate records removed: </span><span class="sc">{</span>duplicate_count<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Clean trading dates retained: </span><span class="sc">{</span><span class="bu">len</span>(prices)<span class="sc">:,}</span><span class="ss">"</span>)</span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>prices.head(<span class="dv">3</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Unusable records removed: 0
+Exact duplicate records removed: 0
+Clean trading dates retained: 614</code></pre>
+</div>
+<div id="validate-data" class="cell-output cell-output-display" data-execution_count="3">
+<div>
+
+
+<table class="dataframe caption-top table table-sm table-striped small" data-border="1">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th"></th>
+<th data-quarto-table-cell-role="th">date</th>
+<th data-quarto-table-cell-role="th">close</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<th data-quarto-table-cell-role="th">0</th>
+<td>2024-01-18</td>
+<td>476.49</td>
+</tr>
+<tr class="even">
+<th data-quarto-table-cell-role="th">1</th>
+<td>2024-01-19</td>
+<td>482.43</td>
+</tr>
+<tr class="odd">
+<th data-quarto-table-cell-role="th">2</th>
+<td>2024-01-22</td>
+<td>483.45</td>
+</tr>
+</tbody>
+</table>
+
+</div>
+</div>
+</div>
+<p>This creates a tidy table: one observation per trading date, with one variable per column. Two different prices for the same date trigger an error because choosing one silently could change the analysis.</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 50%">
+<col style="width: 50%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Check</th>
+<th style="text-align: left;">Why it matters</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Parse dates and prices</td>
+<td style="text-align: left;">Calculations need meaningful data types.</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Count unusable records</td>
+<td style="text-align: left;">Cleaning decisions should be visible.</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Remove exact duplicates</td>
+<td style="text-align: left;">Repeated observations should not receive extra weight.</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Sort dates</td>
+<td style="text-align: left;">Returns must compare observations in the correct order.</td>
+</tr>
+</tbody>
+</table>
+<p>We also need to think about why values are absent in the first place. SPY does not trade every calendar day, so weekends and market holidays show up as gaps. We will keep trading dates rather than invent prices for those days. An unexpected missing trading-day price shouldn’t be deleted because it could make the next observed change span more than one trading day.</p>
+<p>The data you download may already pass your checks - my data had to be slightly adjusted and added to. Reporting zero removed rows is still useful evidence, so don’t remove those values either! We do not need to damage the dataset to demonstrate cleaning, and dropping missing rows is not a universal solution to missingness.</p>
+</section>
+<section id="next-turn-clean-prices-into-a-model" class="level2">
+<h2 class="anchored" data-anchor-id="next-turn-clean-prices-into-a-model">Next: turn clean prices into a model</h2>
+<p>Our next checkpoint will calculate returns, build features available at the end of each trading day, and separate earlier training dates from later test dates. We will then fit a linear regression and compare its mean absolute error with a prediction of zero change.</p>
+<p>Before moving on, inspect <code>raw.dtypes</code> and <code>prices.dtypes</code> in Positron. Which columns changed type, and why does sorting need to happen before calculating a return?</p>
+</section>
+<section id="resources" class="level2">
+<h2 class="anchored" data-anchor-id="resources">Resources</h2>
+<ul>
+<li><a href="https://pandas.pydata.org/docs/reference/api/pandas.read_csv.html">pandas CSV import</a></li>
+<li><a href="https://pandas.pydata.org/docs/user_guide/missing_data.html">pandas missing-data guide</a></li>
+<li><a href="https://scikit-learn.org/stable/common_pitfalls.html#data-leakage">scikit-learn guidance on avoiding data leakage</a></li>
+</ul>
+
+
+</section>
 
 </main> <!-- /main -->
 <script id="quarto-html-after-body" type="application/javascript">
@@ -532,6 +818,19 @@ ul.task-list li input[type="checkbox"] {
   });
   </script>
 </div> <!-- /content -->
+<footer class="footer">
+  <div class="nav-footer">
+    <div class="nav-footer-left">
+<p>Connor Gordon · Data science notes</p>
+</div>   
+    <div class="nav-footer-center">
+      &nbsp;
+    </div>
+    <div class="nav-footer-right">
+<p>Built with Quarto</p>
+</div>
+  </div>
+</footer>
 
 
 

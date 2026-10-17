@@ -1,2 +1,30 @@
-/* css styles */
+:root {
+  --ink: #172d3b;
+  --muted: #536674;
+  --accent: #096b63;
+  --paper: #fafbf9;
+}
 
+body { color: var(--ink); background: var(--paper); }
+.navbar { background: #fff; border-bottom: 1px solid #dce4e4; }
+.navbar-brand { font-weight: 700; letter-spacing: -0.02em; }
+.navbar .nav-link.active { color: var(--accent); }
+h1, h2, h3 { letter-spacing: -0.025em; }
+h1 { font-weight: 700; line-height: 1.12; }
+h2 { margin-top: 2.2rem; }
+p, li { line-height: 1.75; }
+a { color: var(--accent); text-underline-offset: 0.15em; }
+.subtitle { color: var(--muted); max-width: 52rem; }
+.tutorial-card { border: 1px solid #d5e1de; border-left: 4px solid var(--accent); background: #fff; padding: 1.3rem 1.6rem; margin: 2rem 0; border-radius: 5px; }
+.tutorial-card h3 { margin-top: 0; }
+.btn-primary { background: var(--accent); border-color: var(--accent); }
+.btn-primary:hover, .btn-primary:focus { background: #064d48; border-color: #064d48; }
+.callout { background: #fff; }
+div.sourceCode { border: 1px solid #e0e7e6; border-radius: 5px; }
+pre.sourceCode { font-size: .87em; }
+table { font-size: .93rem; }
+.nav-footer { border-top: 1px solid #dce4e4; color: var(--muted); }
+@media (max-width: 600px) {
+  h1 { font-size: 2rem; }
+  .tutorial-card { padding: 1rem; }
+}

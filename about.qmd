@@ -1,1 +1,10 @@
+---
+title: "About"
+toc: false
+---
 
+I’m **Connor Gordon**, a student at Brigham Young University studying Statistics with a Data Science Emphasis.
+
+My interests include Python, financial markets, machine learning, and data visualization. I’m using this site to practice explaining what I learn!
+
+The [SPY tutorial](blog.qmd) follows a question from raw data through cleaning, modeling, and evaluation.

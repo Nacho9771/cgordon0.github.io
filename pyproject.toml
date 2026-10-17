@@ -1,0 +1,19 @@
+[project]
+name = "connor-spy-tutorial"
+version = "0.1.0"
+description = "A reproducible first Python model using SPY daily data."
+requires-python = ">=3.11,<3.14"
+dependencies = [
+  "pandas>=2.2,<3.1",
+  "scikit-learn>=1.5,<2",
+  "matplotlib>=3.8,<4",
+  "ipykernel>=6,<8",
+  "nbclient>=0.10,<1",
+  "nbformat>=5,<6",
+  "pyyaml>=6,<7",
+  "tabulate>=0.9,<1",
+]
+
+[tool.uv]
+package = false
+

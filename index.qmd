@@ -1,1 +1,15 @@
+---
+title: "SPY Data Science Tutorial"
+subtitle: "Working with python and raw edata to make a machine-learning model"
+toc: false
+---
 
+My name is Connor Gordon. This is where I’m developing tutorials and projects for STAT 386 at BYU, with an interest in Python and financial data!
+
+::: {.tutorial-card}
+### Building and Evaluating Your First Python Model with SPY Data
+
+Start with a CSV, clean the data, and work toward a model you can evaluate. This tutorial connects pandas skills with a first machine-learning model you can create.
+
+[Read the tutorial in progress →](blog.qmd){.btn .btn-primary}
+:::
