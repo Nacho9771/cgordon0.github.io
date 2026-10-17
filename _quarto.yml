@@ -8,7 +8,6 @@ project:
   resources:
     - data/SPY.csv
     - data/SPY.metadata.json
-    - data/README.md
     - pyproject.toml
     - uv.lock
     - "!**/.venv/**"

@@ -1,6 +1,6 @@
 ---
-title: "Building and Evaluating Your First Python Model with SPY Data"
-subtitle: "From a raw CSV to a fair test of a simple prediction."
+title: "Building Your First Python Model with SPY Data"
+subtitle: "Clean a SPY dataset, build a model, and give it a fair test."
 author: "Connor Gordon"
 date: 2026-10-16
 categories: [Python, pandas, Machine learning]
@@ -8,55 +8,47 @@ description: "A first modeling workflow using SPY data, with careful cleaning an
 jupyter: python3
 ---
 
-::: {.callout-note title="Draft in progress"}
-This first checkpoint covers importing and cleaning the data. Feature engineering, model training, and evaluation come next.
-:::
+## Start: *with a question*
 
-## Start with a question
+Before choosing a machine-learning algorithm, decide what you want to predict! The question in consideration for this tutorial is:
 
-Before choosing a machine-learning algorithm, decide what you want to predict. The question we are considering for this tutorial is the following:
-
-\
 **Can recent SPY returns help predict its return on the next trading day?**
 
-SPY is an ETF that tracks the S&P 500. Its daily prices give us a concrete dataset for practicing Python. Our goal is to learn how to import data, check its quality, create useful inputs, fit one model, and compare its errors with a simple baseline.
+SPY is an ETF that tracks the S&P 500. I will use its prices to practice importing data, checking quality, creating inputs, fitting one model, and comparing errors with a baseline model. This connects the work we are doing in STAT 386 with CSV files, pandas, tidy data, and missing values to a model. This tutorial assumes that you have a baseline knowledge of regressions.
 
-This builds on our STAT 386 work with CSV files, pandas, data types, tidy data, and missing values. You should know basic Python and how to select columns in a DataFrame. The modeling steps will be introduced as we go.
+## Step 1: Load your dataset
 
-## 1. Load a reproducible dataset
+I am starting with a SPY dataset I previously transformed for a personal project. My stock-mlm repository (link listed below) contains related code for acquiring daily Alpaca bars and adding `pandas_ta` indicators. The supplied CSV has 614 observations and 35 columns, covering January 2024 through June 2026and we will be using the timestamp and closing price as variables.
 
-I am starting with a SPY dataset I previously transformed for a personal project, but you can start by scraping stock data from somewhere like Yahoo Finance or a free API (my [stock-mlm repository](https://github.com/Nacho9771/stock-mlm) contains related code for acquiring daily bars from Alpaca and adding indicators with `pandas_ta`). The supplied CSV has 614 observations, 35 columns, and dates from January 2024 through June 2026, and we will use the timestamp and closing price as variables.
-
-Keeping the CSV with the project lets readers run the example without an API key or a network request. Its metadata records the date range and checksum. This is already transformed data, so our checks describe this file rather than the original retrieval of the data.
-
-From the project’s terminal, install the Python environment and preview the site:
+From the project terminal, install the environment:
 
 ``` bash
 uv sync
-uv run quarto preview
 ```
 
-In Positron, select the project’s `.venv` Python interpreter. Run the Python chunks in this post in order, or render the page with Quarto.
+In Positron, select the project’s `.venv` interpreter and run the Python chunks. The saved CSV lets the example run without an API key or a fresh download.
 
 ```{python}
 #| label: load-data
+#| output: asis
 import pandas as pd
 
 raw = pd.read_csv("data/SPY.csv")
-print(f"Imported {len(raw):,} rows and {len(raw.columns)} columns.")
-raw[["symbol", "timestamp", "close"]].head(3)
+print(f"Imported {len(raw):,} rows and {len(raw.columns)} columns.\n")
+print(raw[["symbol", "timestamp", "close"]].head(3).to_markdown(
+    index=False, floatfmt=".2f"
+))
 ```
 
-Each row represents one trading date. Our later target will be a change in the supplied **close** series. The file does not document dividend adjustments, so we will describe price changes rather than claim to calculate total investment returns.
+The file does not document dividend adjustments. Instead, I modeled the changes in the supplied **close** series, without claiming total investment returns. There's metadata that records the snapshot’s date range and checksum.
 
 ## 2. Clean before calculating
 
-Loading a file successfully does not prove it is ready for analysis. A date stored as text can sort incorrectly, and a nonnumeric price cannot be used to calculate a return! This means we need to clean the data. We first select the columns we need and give them clear names:
+Loading a file successfully does not prove it is ready for analysis. A date stored as text can sort incorrectly, and a non-numeric price cannot produce a meaningful return! I select SPY, parse timestamps, and check prices first.
 
 ```{python}
 #| label: clean-data
 prices = raw.loc[raw["symbol"].eq("SPY"), ["timestamp", "close"]].copy()
-
 timestamps = pd.to_datetime(prices["timestamp"], errors="coerce", utc=True)
 prices["date"] = (
     timestamps.dt.tz_convert("America/New_York")
@@ -69,46 +61,151 @@ prices["close"] = prices["close"].replace(
 prices = prices[["date", "close"]]
 ```
 
-The timestamps include UTC offsets. Parsing them as UTC and converting to New York time gives us consistent local trading dates across daylight-saving changes, which is something that you should look out for when cleaning data. With `errors="coerce"`, an invalid value becomes missing so we can identify it. The default for missing data is to inspect it, not ignore it or outright remove it. In this case, we count unusable records before removing them and remove only exact duplicate date–price pairs.
+Converting UTC timestamps to New York time gives consistent local trading dates across daylight-saving changes. With `errors="coerce"`, invalid values become missing. My default is to inspect missing data, not automatically delete it. Here, the code stops if a price is unusable: deleting it could turn a daily return into a change across multiple trading days, or cause other errors you don't want in your code.
 
 ```{python}
 #| label: validate-data
 invalid = prices["date"].isna() | prices["close"].isna() | (prices["close"] <= 0)
-invalid_count = int(invalid.sum())
-valid = prices.loc[~invalid].copy()
-duplicate_count = int(valid.duplicated().sum())
-prices = valid.drop_duplicates().sort_values("date").reset_index(drop=True)
+print(f"Unusable records: {int(invalid.sum())}")
+if invalid.any():
+    raise ValueError("Investigate unusable records before calculating returns.")
 
+duplicate_count = int(prices.duplicated().sum())
+prices = prices.drop_duplicates().sort_values("date").reset_index(drop=True)
 if prices["date"].duplicated().any():
     raise ValueError("Conflicting prices for one date: inspect the source.")
 
-print(f"Unusable records removed: {invalid_count}")
-print(f"Exact duplicate records removed: {duplicate_count}")
-print(f"Clean trading dates retained: {len(prices):,}")
-prices.head(3)
+print(f"Exact duplicates removed: {duplicate_count}")
+print(f"Clean trading dates: {len(prices):,}")
 ```
 
-This creates a tidy table: one observation per trading date, with one variable per column. Two different prices for the same date trigger an error because choosing one silently could change the analysis.
+The result is a tidy table: one observation per trading date, one variable per column. This already-transformed file passes the checks; reporting zero problems is still useful. Weekends and market holidays are expected gaps, so we should leave these values alone. Unexpected missing trading dates would need investigation if they were present.
 
-| Check | Why it matters |
-|:-----------------------------------|:-----------------------------------|
-| Parse dates and prices | Calculations need meaningful data types. |
-| Count unusable records | Cleaning decisions should be visible. |
-| Remove exact duplicates | Repeated observations should not receive extra weight. |
-| Sort dates | Returns must compare observations in the correct order. |
+## 3. Create features and a target
 
-We also need to think about why values are absent in the first place. SPY does not trade every calendar day, so weekends and market holidays show up as gaps. We will keep trading dates rather than invent prices for those days. An unexpected missing trading-day price shouldn't be deleted because it could make the next observed change span more than one trading day.
+A **feature** is an input available when making a prediction; the **target** is the outcome we want to predict. Our daily percentage price change is:
 
-The data you download may already pass your checks - my data had to be slightly adjusted and added to. Reporting zero removed rows is still useful evidence, so don't remove those values either! We do not need to damage the dataset to demonstrate cleaning, and dropping missing rows is not a universal solution to missingness.
+$$
+r_t = 100\left(\frac{P_t}{P_{t-1}} - 1\right).
+$$
 
-## Next: turn clean prices into a model
+For example, a move from 100 to 101 is a 1% change. pandas’ [`pct_change()`](https://pandas.pydata.org/docs/reference/api/pandas.Series.pct_change.html) returns a fraction, so we will multiply by 100. We should add the recent average and standard deviation, then use `shift(-1)` to align tomorrow’s outcome with today’s inputs.
 
-Our next checkpoint will calculate returns, build features available at the end of each trading day, and separate earlier training dates from later test dates. We will then fit a linear regression and compare its mean absolute error with a prediction of zero change.
+```{python}
+#| label: features-and-target
+prices["return_1d"] = prices["close"].pct_change(fill_method=None) * 100
+prices["mean_5d"] = prices["return_1d"].rolling(5).mean()
+prices["volatility_5d"] = prices["return_1d"].rolling(5).std()
+prices["next_return"] = prices["return_1d"].shift(-1)
+prices["target_date"] = prices["date"].shift(-1)
 
-Before moving on, inspect `raw.dtypes` and `prices.dtypes` in Positron. Which columns changed type, and why does sorting need to happen before calculating a return?
+features = ["return_1d", "mean_5d", "volatility_5d"]
+data = prices.dropna(subset=features + ["next_return", "target_date"])
+print(f"Model-ready observations: {len(data):,}")
+```
+
+| Predictor       | Information available after today’s close  |
+|:----------------|:-------------------------------------------|
+| `return_1d`     | Today’s percentage price change            |
+| `mean_5d`       | Mean of the five most recent daily changes |
+| `volatility_5d` | Standard deviation of those changes        |
+
+Only the target uses future information, whereas all three predictors use current or earlier prices. The first five rows lack enough history, and the last row lacks tomorrow’s outcome. We should probably remove these rows to clean the data, so getting rid of six expected boundary rows leaves us 608 observations.
+
+## 4. Keep the future out of training
+
+I train on targets dated before 2026 and test on targets from 2026. A random split would mix earlier and later observations, weakening the forecasting test, so splitting the data this way is more ideal. If you're interested, there is something called the [data-leakage problem](https://scikit-learn.org/stable/common_pitfalls.html#data-leakage), which is using information unavailable when predicting. Read the article if you want to learn more about it!
+
+```{python}
+#| label: chronological-split
+train = data.loc[data["target_date"] < "2026-01-01"]
+test = data.loc[data["target_date"] >= "2026-01-01"]
+X_train, y_train = train[features], train["next_return"]
+X_test, y_test = test[features], test["next_return"]
+print(f"Training observations: {len(train)}; test observations: {len(test)}")
+```
+
+Splitting the data this way gives us 485 training and 123 test observations. Each forecast happens after that day’s close, so earlier test-period prices become available as time passes. This model produces successive one-day predictions, but you can try to adjust it to fit a six-month forecast.
+
+## 5. Fit one model
+
+For our case, I decided to use scikit-learn’s [`LinearRegression`](https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LinearRegression.html) model. It estimates an intercept and weights for the three predictors by minimizing squared training errors. `fit()` learns from training observations; `predict()` applies those fixed weights to test inputs. When fitting data, you should never fit on the test's outcomes.
+
+```{python}
+#| label: fit-model
+from sklearn.linear_model import LinearRegression
+
+model = LinearRegression()
+model.fit(X_train, y_train)
+predicted = model.predict(X_test)
+```
+
+## 6. Compare with a baseline
+
+My baseline predicts zero change every day, which gives us a simple reference for comparison. This is a fixed prediction, rather than a Bayesian prior distribution. For this linear regression, the three chosen predictors determine the model's form; fitting estimates their weights rather than automatically making the model more complex. I compare both using mean absolute error (MAE), the average absolute prediction error, where lower values are better. Since the target is a percentage change, MAE is measured in percentage points! \
+\
+Below is the code that demonstrates this:
+
+```{python}
+#| label: evaluate-model
+#| output: asis
+from sklearn.metrics import mean_absolute_error
+
+baseline = [0.0] * len(y_test)
+baseline_mae = mean_absolute_error(y_test, baseline)
+model_mae = mean_absolute_error(y_test, predicted)
+results = pd.DataFrame({
+    "Prediction": ["Zero change", "Linear regression"],
+    "Test MAE (percentage points)": [baseline_mae, model_mae],
+})
+print(results.to_markdown(index=False, floatfmt=".3f"))
+```
+
+The baseline scores 0.682, compared with 0.686 for regression. On this test period, the model slightly underperforms the baseline. Fitting successfully does not guarantee useful predictions, so dont be discouraged and keep trying to improve your model!
+
+```{python}
+#| label: fig-test-predictions
+#| fig-cap: "One-day predictions on the 2026 test period. The fitted model misses many of the larger price changes."
+#| fig-alt: "Daily observed SPY percentage price changes fluctuate much more than the linear regression predictions, which remain close to the zero-change baseline from January through June 2026."
+#| fig-width: 9
+#| fig-height: 3.8
+#| fig-dpi: 160
+#| fig-format: png
+#| code-fold: true
+#| code-summary: "Plot the test predictions"
+import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
+
+fig, ax = plt.subplots(figsize=(9, 3.8), layout="constrained")
+ax.plot(test["target_date"], y_test, color="#687681", linewidth=1,
+        label="Observed change")
+ax.plot(test["target_date"], predicted, color="#096b63", linewidth=1.7,
+        label="Linear regression")
+ax.axhline(0, color="#ab6531", linestyle="--", linewidth=1,
+           label="Zero-change baseline")
+ax.set(title="Does the model capture tomorrow's price change?",
+       xlabel="Target trading date", ylabel="Daily price change (%)")
+ax.xaxis.set_major_locator(mdates.MonthLocator())
+ax.xaxis.set_major_formatter(mdates.DateFormatter("%b %Y"))
+ax.spines[["top", "right"]].set_visible(False)
+ax.legend(frameon=False, loc="upper left", ncol=3, fontsize=8)
+plt.show()
+```
+
+The plot helps explain the errors: predictions stay near zero while observed changes are a lot crazier. In this example, the fitted coefficients produce much less variation than the observed returns; a linear regression is not guaranteed to behave this way. Other time-series forecasting methods are worth exploring in tutorials on your own.
+
+This was to demonstrate how to begin building a model. In this case, one test period cannot establish future performance or profitability. I would use earlier time-based validation windows to choose improvements, keeping a later test period untouched in order to improve my model.
+
+## Try it yourself
+
+I started with a CSV and checked its types, dates, duplicates, and missingness before building features. Keeping time in order and comparing against a baseline highlighted that the stock market is an extremely complex thing to predict.
+
+**Your next step:** Find other statistical models to try and predict the market! You can first inspect `data.head()` and trace one row’s inputs to its next-day target. Then, using only training data, compare five-day and ten-day rolling features with chronological validation. Decide on the feature choice before evaluating it on a fresh holdout period.
+
+I hope you found this tutorial helpful! Go ahead and continue learning how to improve your model with other methods, and look for other ways to predict future data!
 
 ## Resources
 
-- [pandas CSV import](https://pandas.pydata.org/docs/reference/api/pandas.read_csv.html)
 - [pandas missing-data guide](https://pandas.pydata.org/docs/user_guide/missing_data.html)
-- [scikit-learn guidance on avoiding data leakage](https://scikit-learn.org/stable/common_pitfalls.html#data-leakage)
+- [scikit-learn time-series evaluation example](https://scikit-learn.org/stable/auto_examples/applications/plot_time_series_lagged_features.html)
+- [My earlier stock-data project](https://github.com/Nacho9771/stock-mlm)

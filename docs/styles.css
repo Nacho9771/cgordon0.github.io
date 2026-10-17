@@ -15,7 +15,6 @@ h2 { margin-top: 2.2rem; }
 p, li { line-height: 1.75; }
 a { color: var(--accent); text-underline-offset: 0.15em; }
 .subtitle { color: var(--muted); max-width: 52rem; }
-.eyebrow { color: var(--accent); font-size: .78rem; font-weight: 700; letter-spacing: .13em; margin: 2rem 0 1rem; }
 .tutorial-card { border: 1px solid #d5e1de; border-left: 4px solid var(--accent); background: #fff; padding: 1.3rem 1.6rem; margin: 2rem 0; border-radius: 5px; }
 .tutorial-card h3 { margin-top: 0; }
 .btn-primary { background: var(--accent); border-color: var(--accent); }
