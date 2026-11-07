@@ -4,6 +4,7 @@ project:
   render:
     - index.qmd
     - blog.qmd
+    - data-acquisition.qmd
     - about.qmd
   resources:
     - data/SPY.csv
@@ -21,6 +22,8 @@ website:
         text: Home
       - href: blog.qmd
         text: Blog
+      - href: data-acquisition.qmd
+        text: Data Acquisition
       - href: about.qmd
         text: About
   page-footer:
